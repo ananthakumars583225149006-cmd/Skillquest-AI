@@ -12,7 +12,7 @@ from .database import Base
 
 
 def get_utc_now():
-    return datetime.now(timezone.utc)
+        return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Profile(Base):

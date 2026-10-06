@@ -1,0 +1,123 @@
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+@layer base {
+  :root {
+    --bg-canvas: #FAFAFC;
+    --card-bg: #FFFFFF;
+    --border-color: #E5E7EB;
+    --text-primary: #18181B;
+    --text-secondary: #6B7280;
+    --brand-primary: #7C3AED;
+    --brand-soft: #A78BFA;
+    --brand-container: #F3EEFF;
+    --track-cse: #A855F7;
+    --track-ece: #F59E0B;
+    --track-eee: #F97316;
+    --accent-success: #10B981;
+    --accent-gold: #F59E0B;
+    --accent-streak: #FB7185;
+    --accent-error: #EF4444;
+  }
+
+  body {
+    background-color: #FAFAFC;
+    color: #18181B;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* 3D Chunky Button Utility Classes */
+.btn-3d {
+  position: relative;
+  transition: all 0.1s ease-in-out;
+  cursor: pointer;
+  user-select: none;
+}
+
+.btn-3d:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 transparent !important;
+}
+
+.btn-3d-brand {
+  background-color: #7C3AED;
+  color: #FFFFFF;
+  box-shadow: 0 4px 0 #5B21B6;
+}
+.btn-3d-brand:hover {
+  background-color: #6D28D9;
+}
+
+.btn-3d-success {
+  background-color: #10B981;
+  color: #FFFFFF;
+  box-shadow: 0 4px 0 #047857;
+}
+.btn-3d-success:hover {
+  background-color: #059669;
+}
+
+.btn-3d-eee {
+  background-color: #F97316;
+  color: #FFFFFF;
+  box-shadow: 0 4px 0 #C2410C;
+}
+.btn-3d-eee:hover {
+  background-color: #EA580C;
+}
+
+.btn-3d-cse {
+  background-color: #A855F7;
+  color: #FFFFFF;
+  box-shadow: 0 4px 0 #7E22CE;
+}
+.btn-3d-cse:hover {
+  background-color: #9333EA;
+}
+
+.btn-3d-ece {
+  background-color: #F59E0B;
+  color: #FFFFFF;
+  box-shadow: 0 4px 0 #B45309;
+}
+.btn-3d-ece:hover {
+  background-color: #D97706;
+}
+
+.btn-3d-neutral {
+  background-color: #FFFFFF;
+  color: #18181B;
+  border: 2px solid #E5E7EB;
+  box-shadow: 0 4px 0 #D1D5DB;
+}
+.btn-3d-neutral:hover {
+  background-color: #F9FAFB;
+}
+
+/* Node pulse effect for decayed skills */
+@keyframes pulse-decay {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+.node-decay-alert {
+  animation: pulse-decay 2s infinite;
+}

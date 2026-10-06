@@ -276,14 +276,14 @@ async def submit_challenge(
 
     if mastery:
         mastery.p_mastery = next_p
-        mastery.last_decay_timestamp = datetime.now(timezone.utc)
+        mastery.last_decay_timestamp = datetime.now(timezone.utc).replace(tzinfo=None)
     else:
         new_mastery = BKTTopicMastery(
             user_id=user_id,
             track=level.track,
             topic_tag=level.topic_tag,
             p_mastery=next_p,
-            last_decay_timestamp=datetime.now(timezone.utc),
+            last_decay_timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
         )
         db.add(new_mastery)
 

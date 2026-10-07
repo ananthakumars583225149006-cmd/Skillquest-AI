@@ -104,6 +104,7 @@ export const App: React.FC = () => {
             profile={profile}
             onSelectLevel={handleSelectLevel}
             onTrackChange={handleTrackChange}
+            onRefreshProfile={loadProfile}
           />
         )}
 

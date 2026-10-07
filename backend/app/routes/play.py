@@ -126,6 +126,8 @@ async def get_track_progress(track: str, user_id: Optional[str] = "00000000-0000
         "track": track_code,
         "unlocked_level_number": unlocked_lvl_num,
         "completed_count": len(completed_ids),
+        "read_notes_level_ids": list(prog.read_notes_level_ids or []) if prog else [],
+        "completed_knowledge_quest_ids": list(prog.completed_knowledge_quest_ids or []) if prog else [],
         "levels": nodes,
     }
 

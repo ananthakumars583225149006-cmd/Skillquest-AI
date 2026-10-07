@@ -10,7 +10,8 @@ from sqlalchemy import select
 from .database import AsyncSessionLocal, init_db
 from .models import (
     Level, Challenge, MascotOutfit, Profile, UserMascotInventory,
-    UserCourseProgress, BKTTopicMastery, LeagueStanding
+    UserCourseProgress, BKTTopicMastery, LeagueStanding,
+    LevelNote, KnowledgeQuest
 )
 
 # Canonical 8 Rhino Outfits
@@ -321,6 +322,81 @@ def generate_challenges_for_level(level_id: str, track: str, level_num: int, top
     return challenges
 
 
+async def seed_notes_and_knowledge_quests(session):
+    """Seeds LevelNote and KnowledgeQuest tables if not already seeded."""
+    # 1. Level Notes
+    note_check = await session.execute(select(LevelNote).limit(1))
+    if not note_check.scalars().first():
+        print("[Skill Quest AI] Seeding Level Notes for curriculum levels...")
+        levels_res = await session.execute(select(Level))
+        all_levels = levels_res.scalars().all()
+        for lvl in all_levels:
+            track = lvl.track
+            if track == "EEE":
+                formulas = [
+                    {"label": "Ohm's Law", "latex": "V = I \\times R"},
+                    {"label": "Voltage Divider Rule", "latex": "V_{out} = V_{in} \\times \\frac{R_2}{R_1 + R_2}"},
+                    {"label": "Joule Heating Power", "latex": "P = V \\times I = I^2 \\times R"}
+                ]
+                real_world = "Used in smartphone battery management ICs, buck converters, and electric vehicle powertrain regulation."
+            elif track == "CSE":
+                formulas = [
+                    {"label": "Bitwise Left Shift", "latex": "x \\ll k = x \\times 2^k"},
+                    {"label": "Asymptotic Runtime", "latex": "T(n) = \\mathcal{O}(n \\log n)"},
+                    {"label": "De Morgan's Inversion", "latex": "\\overline{A \\cdot B} = \\overline{A} + \\overline{B}"}
+                ]
+                real_world = "Underpins modern operating system page tables, cryptographic hashing, and high-frequency network packets."
+            else:  # ECE
+                formulas = [
+                    {"label": "Resonant Frequency", "latex": "f_0 = \\frac{1}{2\\pi\\sqrt{LC}}"},
+                    {"label": "Inverting Op-Amp Gain", "latex": "A_v = -\\frac{R_f}{R_{in}}"},
+                    {"label": "Nyquist Criterion", "latex": "f_s \\ge 2 \\cdot f_{max}"}
+                ]
+                real_world = "Directly implemented in 5G RF front-end bandpass filters, smartphone audio codecs, and radar telemetry."
+
+            note = LevelNote(
+                level_id=lvl.id,
+                title=f"{lvl.title} Primer",
+                summary=f"Master key theoretical foundations and circuit relationships for {lvl.title}.",
+                key_points=[
+                    f"Theoretical model establishing steady-state for {lvl.title}.",
+                    "Step-by-step mathematical decomposition of circuit laws.",
+                    "Verification against SPICE simulation telemetry before adjusting components."
+                ],
+                formulas_rules=formulas,
+                worked_example={
+                    "problem": f"Calculate the required component value to reach nominal target in {lvl.title}.",
+                    "step_by_step": "1. Identify circuit or logic boundary constraints.\n2. Apply the fundamental formula.\n3. Verify tolerance bounds against target goal.",
+                    "solution": "Nominal equilibrium achieved within ±1.5% margin."
+                },
+                visual_asset_url=f"/assets/diagrams/{lvl.id}.svg",
+                real_world_connection=real_world
+            )
+            session.add(note)
+        await session.commit()
+
+    # 2. Knowledge Quests
+    kq_check = await session.execute(select(KnowledgeQuest).limit(1))
+    if not kq_check.scalars().first():
+        print("[Skill Quest AI] Seeding Knowledge Quests for Modules 1, 2, 3 across tracks...")
+        from ..routes.courses import generate_fallback_knowledge_quest
+        for track in ["EEE", "CSE", "ECE"]:
+            for m_idx in [1, 2, 3]:
+                data = generate_fallback_knowledge_quest(track, m_idx)
+                kq = KnowledgeQuest(
+                    track=data["track"],
+                    module_index=data["module_index"],
+                    title=data["title"],
+                    recap_summary=data["recap_summary"],
+                    concept_breakdown=data["concept_breakdown"],
+                    key_formulas=data["key_formulas"],
+                    practice_flashcards=data["practice_flashcards"],
+                    unlocked_after_level_number=data["unlocked_after_level_number"]
+                )
+                session.add(kq)
+        await session.commit()
+
+
 async def seed_database():
     """Initializes and seeds full 90 levels, challenges, outfits, and starter profile."""
     await init_db()
@@ -329,7 +405,8 @@ async def seed_database():
         result = await session.execute(select(Level).limit(1))
         existing_level = result.scalars().first()
         if existing_level:
-            print("[Skill Quest AI] Database already contains curriculum. Skipping duplicate seeding.")
+            print("[Skill Quest AI] Database already contains curriculum. Ensuring notes and knowledge quests are seeded...")
+            await seed_notes_and_knowledge_quests(session)
             return
 
         print("[Skill Quest AI] Seeding Mascot Wardrobe Outfits...")
@@ -447,6 +524,7 @@ async def seed_database():
         session.add(league)
 
         await session.commit()
+        await seed_notes_and_knowledge_quests(session)
         print("[Skill Quest AI] Database seeded successfully! 90 Levels, 720+ Challenges, Outfits, & Profile ready.")
 
 

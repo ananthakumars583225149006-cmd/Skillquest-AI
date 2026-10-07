@@ -41,3 +41,13 @@ async def init_db():
     """Initializes tables in database."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Safe migration check for local SQLite when table already exists
+        from sqlalchemy import text
+        try:
+            await conn.execute(text("ALTER TABLE user_course_progress ADD COLUMN read_notes_level_ids JSON DEFAULT '[]'"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE user_course_progress ADD COLUMN completed_knowledge_quest_ids JSON DEFAULT '[]'"))
+        except Exception:
+            pass

@@ -25,45 +25,27 @@ class GeminiService:
         target_goal: Dict[str, Any],
         user_query: str,
         topic_tag: str = "Circuit Analysis",
+        active_view: Optional[str] = "WORKBENCH",
+        context_id: Optional[str] = "",
+        notes_context: Optional[Dict[str, Any]] = None,
+        quest_context: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Generates Socratic guidance from Spike the Engineering Rhino.
-        Never gives away the direct numerical answer.
-        Asks 1-2 guiding questions rooted in deterministic simulation measurements.
+        Runs intent classification first to prevent context leaks and casual greeting confusion.
         """
-        prompt = f"""You are Spike the Engineering Rhino, the friendly, enthusiastic Socratic AI Tutor for Skill Quest AI!
-Engineering Domain: {topic_tag}
-Ground Truth Deterministic Simulation Telemetry: {spice_telemetry}
-Target Goal: {target_goal}
-Student's Question / State: {user_query}
-
-Directives:
-1. Speak as Spike the Rhino (warm, encouraging, cheerful engineer companion).
-2. NEVER give the direct numerical answer or direct code fix.
-3. Ask 1-2 sharp Socratic guiding questions that lead the student to identify where their calculation or topology is off.
-4. Use standard LaTeX notation for formulas (e.g. $V = I \\cdot R$, $f_0 = \\frac{{1}}{{2\\pi\\sqrt{{LC}}}}$).
-5. Keep it concise (under 120 words).
-"""
-        if self.api_key:
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.pro_model}:generateContent?key={self.api_key}"
-                payload = {
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"temperature": 0.4, "maxOutputTokens": 300},
-                }
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    resp = await client.post(url, json=payload)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        candidates = data.get("candidates", [])
-                        if candidates:
-                            return candidates[0]["content"]["parts"][0]["text"].strip()
-            except Exception as e:
-                # Log and fallback gracefully
-                pass
-
-        # Deterministic High-Quality Fallback Socratic Guidance (Spike Persona)
-        return self._build_offline_socratic_hint(spice_telemetry, target_goal, user_query, topic_tag)
+        from ..services.socratic_tutor import socratic_tutor
+        result = await socratic_tutor.generate_response(
+            message=user_query,
+            active_view=active_view,
+            context_id=context_id,
+            spice_telemetry=spice_telemetry,
+            target_goal=target_goal,
+            topic_tag=topic_tag,
+            notes_context=notes_context,
+            quest_context=quest_context,
+        )
+        return result["guidance"]
 
     async def generate_adaptive_drill(self, topic_tag: str, current_mastery: float) -> Dict[str, Any]:
         """

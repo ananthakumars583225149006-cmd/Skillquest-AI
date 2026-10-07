@@ -98,8 +98,39 @@ CREATE TABLE IF NOT EXISTS public.user_course_progress (
     completed_level_ids JSONB DEFAULT '[]'::jsonb,
     stars_earned_json JSONB DEFAULT '{}'::jsonb,
     unlocked_level_number INT DEFAULT 1,
+    read_notes_level_ids JSONB DEFAULT '[]'::jsonb NOT NULL,
+    completed_knowledge_quest_ids JSONB DEFAULT '[]'::jsonb NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(user_id, track)
+);
+
+-- 4b. INTERACTIVE LEVEL NOTES
+CREATE TABLE IF NOT EXISTS public.level_notes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    level_id TEXT UNIQUE NOT NULL REFERENCES public.levels(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    key_points JSONB NOT NULL DEFAULT '[]'::jsonb,
+    formulas_rules JSONB NOT NULL DEFAULT '[]'::jsonb,
+    worked_example JSONB NOT NULL DEFAULT '{}'::jsonb,
+    visual_asset_url TEXT,
+    real_world_connection TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- 4c. KNOWLEDGE QUESTS (SYNTHESIS & BOSS REVISION)
+CREATE TABLE IF NOT EXISTS public.knowledge_quests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    track course_track NOT NULL,
+    module_index INT NOT NULL CHECK (module_index BETWEEN 1 AND 3),
+    title TEXT NOT NULL,
+    recap_summary TEXT NOT NULL,
+    concept_breakdown JSONB NOT NULL DEFAULT '[]'::jsonb,
+    key_formulas JSONB NOT NULL DEFAULT '[]'::jsonb,
+    practice_flashcards JSONB NOT NULL DEFAULT '[]'::jsonb,
+    unlocked_after_level_number INT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    CONSTRAINT uq_track_module UNIQUE (track, module_index)
 );
 
 -- 5. BKT ADAPTIVE MASTERY (MVP Active Adaptive System)

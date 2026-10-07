@@ -1,4 +1,7 @@
-import { UserProfile, TrackSummary, LevelNode, LevelDetail, MascotOutfitItem, LeaderboardEntry, CourseTrack } from './types';
+import {
+  UserProfile, TrackSummary, LevelNode, LevelDetail, MascotOutfitItem,
+  LeaderboardEntry, CourseTrack, LevelNoteData, KnowledgeQuestData
+} from './types';
 
 const API_BASE = '/api/v1';
 
@@ -25,7 +28,14 @@ export const api = {
     return data.tracks;
   },
 
-  async getTrackProgress(track: CourseTrack): Promise<{ track: CourseTrack; levels: LevelNode[]; unlocked_level_number: number; completed_count: number }> {
+  async getTrackProgress(track: CourseTrack): Promise<{
+    track: CourseTrack;
+    levels: LevelNode[];
+    unlocked_level_number: number;
+    completed_count: number;
+    read_notes_level_ids?: string[];
+    completed_knowledge_quest_ids?: any[];
+  }> {
     const res = await fetch(`${API_BASE}/play/track-progress/${track}`);
     if (!res.ok) throw new Error('Failed to fetch track progress');
     return res.json();
@@ -51,7 +61,44 @@ export const api = {
     return res.json();
   },
 
-  async getSocraticHint(spiceTelemetry: any, targetGoal: any, userQuery: string, topicTag: string): Promise<string> {
+  async getLevelNotes(levelId: string): Promise<LevelNoteData> {
+    const res = await fetch(`${API_BASE}/courses/levels/${levelId}/notes`);
+    if (!res.ok) throw new Error('Failed to fetch level notes');
+    return res.json();
+  },
+
+  async markLevelNotesRead(levelId: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/courses/levels/${levelId}/notes/read`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error('Failed to mark level notes read');
+    return res.json();
+  },
+
+  async getKnowledgeQuest(track: CourseTrack, moduleIndex: number): Promise<KnowledgeQuestData> {
+    const res = await fetch(`${API_BASE}/courses/tracks/${track}/knowledge-quest/${moduleIndex}`);
+    if (!res.ok) throw new Error('Failed to fetch knowledge quest');
+    return res.json();
+  },
+
+  async completeKnowledgeQuest(track: CourseTrack, moduleIndex: number): Promise<any> {
+    const res = await fetch(`${API_BASE}/courses/tracks/${track}/knowledge-quest/${moduleIndex}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error('Failed to complete knowledge quest');
+    return res.json();
+  },
+
+  async getSocraticHint(
+    spiceTelemetry: any,
+    targetGoal: any,
+    userQuery: string,
+    topicTag: string,
+    activeView: 'WORKBENCH' | 'LEVEL_NOTES' | 'KNOWLEDGE_QUEST' = 'WORKBENCH',
+    contextId: string = ''
+  ): Promise<string> {
     const res = await fetch(`${API_BASE}/ai/socratic-hint`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -59,7 +106,10 @@ export const api = {
         spice_telemetry: spiceTelemetry,
         target_goal: targetGoal,
         user_query: userQuery,
+        message: userQuery,
         topic_tag: topicTag,
+        active_view: activeView,
+        context_id: contextId,
       }),
     });
     if (!res.ok) throw new Error('Failed to get Socratic hint');

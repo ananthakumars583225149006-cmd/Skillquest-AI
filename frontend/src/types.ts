@@ -94,3 +94,47 @@ export interface LeaderboardEntry {
   is_current_user: boolean;
   zone: 'promotion' | 'relegation' | 'safe';
 }
+
+export interface FormulaRule {
+  label: string;
+  latex: string;
+}
+
+export interface WorkedExample {
+  problem: string;
+  step_by_step: string;
+  solution: string;
+}
+
+export interface LevelNoteData {
+  id: string;
+  level_id: string;
+  title: string;
+  summary: string;
+  key_points: string[];
+  formulas_rules: FormulaRule[];
+  worked_example: WorkedExample;
+  visual_asset_url?: string;
+  real_world_connection: string;
+  is_read: boolean;
+}
+
+export interface Flashcard {
+  id: string;
+  front: string;
+  back: string;
+  category: string;
+}
+
+export interface KnowledgeQuestData {
+  id: string;
+  track: CourseTrack;
+  module_index: number;
+  title: string;
+  recap_summary: string;
+  concept_breakdown: string[];
+  key_formulas: FormulaRule[];
+  practice_flashcards: Flashcard[];
+  unlocked_after_level_number: number;
+  is_completed: boolean;
+}

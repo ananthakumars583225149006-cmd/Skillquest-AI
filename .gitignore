@@ -18,3 +18,5 @@ yarn-error.log*
 # IDE / OS
 .DS_Store
 Thumbs.db
+.pytest_cache/
+attachments/

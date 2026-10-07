@@ -533,6 +533,8 @@ export const WorkbenchView: React.FC<WorkbenchViewProps> = ({
         topicTag={level.topic_tag}
         measurements={evalResult?.measurements || {}}
         targetGoal={currentChallenge.target_state}
+        activeView="WORKBENCH"
+        contextId={levelId}
       />
 
       {/* Celebration Modal */}

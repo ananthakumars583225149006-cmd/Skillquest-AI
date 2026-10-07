@@ -85,6 +85,7 @@ class Level(Base):
     created_at = Column(DateTime, default=get_utc_now)
 
     challenges = relationship("Challenge", back_populates="level", cascade="all, delete-orphan", order_by="Challenge.order_index")
+    notes = relationship("LevelNote", back_populates="level", uselist=False, cascade="all, delete-orphan")
 
 
 class Challenge(Base):
@@ -104,6 +105,38 @@ class Challenge(Base):
     level = relationship("Level", back_populates="challenges")
 
 
+class LevelNote(Base):
+    __tablename__ = "level_notes"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    level_id = Column(String(50), ForeignKey("levels.id", ondelete="CASCADE"), unique=True, nullable=False)
+    title = Column(String(200), nullable=False)
+    summary = Column(Text, nullable=False)
+    key_points = Column(JSON, default=list, nullable=False)
+    formulas_rules = Column(JSON, default=list, nullable=False)
+    worked_example = Column(JSON, default=dict, nullable=False)
+    visual_asset_url = Column(Text, nullable=True)
+    real_world_connection = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=get_utc_now)
+
+    level = relationship("Level", back_populates="notes")
+
+
+class KnowledgeQuest(Base):
+    __tablename__ = "knowledge_quests"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    track = Column(String(10), nullable=False)  # CSE, ECE, EEE
+    module_index = Column(Integer, nullable=False)  # 1, 2, 3
+    title = Column(String(200), nullable=False)
+    recap_summary = Column(Text, nullable=False)
+    concept_breakdown = Column(JSON, default=list, nullable=False)
+    key_formulas = Column(JSON, default=list, nullable=False)
+    practice_flashcards = Column(JSON, default=list, nullable=False)
+    unlocked_after_level_number = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=get_utc_now)
+
+
 class UserCourseProgress(Base):
     __tablename__ = "user_course_progress"
 
@@ -113,6 +146,8 @@ class UserCourseProgress(Base):
     completed_level_ids = Column(JSON, default=list)  # list of level_ids
     stars_earned_json = Column(JSON, default=dict)  # {"eee-lvl-1": 3}
     unlocked_level_number = Column(Integer, default=1)
+    read_notes_level_ids = Column(JSON, default=list, nullable=False)
+    completed_knowledge_quest_ids = Column(JSON, default=list, nullable=False)
     updated_at = Column(DateTime, default=get_utc_now)
 
     user = relationship("Profile", back_populates="progress")

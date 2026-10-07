@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MascotOutfitItem, UserProfile } from '../types';
 import { SpikeRhinoAvatar } from '../components/SpikeRhinoAvatar';
 import { api } from '../api';
+import { soundManager } from '../utils/soundManager';
 import { Shirt, Check, Lock, Coins, Sparkles, RefreshCw } from 'lucide-react';
 
 interface WardrobeViewProps {
@@ -43,6 +44,7 @@ export const WardrobeView: React.FC<WardrobeViewProps> = ({
     setMessage(null);
     try {
       await api.equipOutfit(outfit.id);
+      soundManager.playCoinPickup();
       setMessage(`Spike equipped ${outfit.name}!`);
       await loadCatalog();
       onRefreshProfile();
@@ -58,6 +60,7 @@ export const WardrobeView: React.FC<WardrobeViewProps> = ({
     setMessage(null);
     try {
       await api.buyOutfit(outfit.id);
+      soundManager.playCoinPickup();
       setMessage(`Unlocked ${outfit.name}!`);
       await loadCatalog();
       onRefreshProfile();

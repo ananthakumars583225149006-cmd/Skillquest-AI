@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
     username TEXT UNIQUE NOT NULL,
+    avatar_url TEXT,
     active_track course_track DEFAULT 'EEE',
     xp INT DEFAULT 0,
     spark_coins INT DEFAULT 100,
@@ -43,7 +44,7 @@ CREATE TABLE IF NOT EXISTS public.mascot_outfits (
     code TEXT UNIQUE NOT NULL,
     description TEXT NOT NULL,
     category outfit_category NOT NULL,
-    image_layer_url TEXT NOT NULL, -- Supabase Storage Bucket URL or SVG key
+    image_layer_url TEXT NOT NULL,
     price_coins INT DEFAULT 0,
     unlock_required_badge TEXT,
     is_default BOOLEAN DEFAULT FALSE,
@@ -80,7 +81,7 @@ CREATE TABLE IF NOT EXISTS public.challenges (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     level_id TEXT REFERENCES public.levels(id) ON DELETE CASCADE,
     order_index INT NOT NULL, -- 1 to 10
-    challenge_type TEXT NOT NULL, -- SPICE_CIRCUIT, CODE_DEBUG, TRUTH_TABLE, SLIDER_TUNING, PHASOR_ALIGN
+    challenge_type TEXT NOT NULL,
     prompt_text TEXT NOT NULL,
     initial_state_json JSONB NOT NULL,
     target_state_json JSONB NOT NULL,
@@ -95,7 +96,7 @@ CREATE TABLE IF NOT EXISTS public.user_course_progress (
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     track course_track NOT NULL,
     completed_level_ids JSONB DEFAULT '[]'::jsonb,
-    stars_earned_json JSONB DEFAULT '{}'::jsonb, -- {"eee-lvl-1": 3}
+    stars_earned_json JSONB DEFAULT '{}'::jsonb,
     unlocked_level_number INT DEFAULT 1,
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(user_id, track)
@@ -107,7 +108,7 @@ CREATE TABLE IF NOT EXISTS public.bkt_topic_mastery (
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     track course_track NOT NULL,
     topic_tag TEXT NOT NULL,
-    p_mastery FLOAT DEFAULT 0.30, -- Initial L_0
+    p_mastery FLOAT DEFAULT 0.30,
     last_decay_timestamp TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(user_id, topic_tag)
@@ -133,10 +134,97 @@ CREATE TABLE IF NOT EXISTS public.league_standings (
     UNIQUE(user_id, week_start_date)
 );
 
--- RLS SECURITY POLICIES
+-- ==========================================================
+-- REAL GOOGLE AUTHENTICATION & AUTOMATIC PROFILE TRIGGER
+-- ==========================================================
+CREATE OR REPLACE FUNCTION public.handle_new_google_user()
+RETURNS TRIGGER AS $$
+DECLARE
+    extracted_username TEXT;
+    default_outfit_id UUID;
+BEGIN
+    -- Extract username from metadata (full_name, name) or email prefix
+    extracted_username := COALESCE(
+        NEW.raw_user_meta_data->>'full_name',
+        NEW.raw_user_meta_data->>'name',
+        split_part(NEW.email, '@', 1)
+    );
+
+    -- Find default mascot outfit (EEE_HIGH_VOLTAGE)
+    SELECT id INTO default_outfit_id FROM public.mascot_outfits WHERE code = 'EEE_HIGH_VOLTAGE' LIMIT 1;
+
+    -- Insert into public.profiles
+    INSERT INTO public.profiles (
+        id,
+        email,
+        username,
+        avatar_url,
+        active_track,
+        xp,
+        spark_coins,
+        streak_days,
+        hearts,
+        max_hearts,
+        equipped_outfit_id,
+        current_league,
+        created_at
+    ) VALUES (
+        NEW.id,
+        NEW.email,
+        extracted_username,
+        NEW.raw_user_meta_data->>'avatar_url',
+        'EEE',
+        0,
+        100,
+        1,
+        5,
+        5,
+        default_outfit_id,
+        'Bronze',
+        NOW()
+    ) ON CONFLICT (id) DO NOTHING;
+
+    -- Initialize starting course progress for all 3 tracks
+    INSERT INTO public.user_course_progress (user_id, track, unlocked_level_number)
+    VALUES 
+        (NEW.id, 'EEE', 1),
+        (NEW.id, 'CSE', 1),
+        (NEW.id, 'ECE', 1)
+    ON CONFLICT (user_id, track) DO NOTHING;
+
+    -- Grant default outfit in inventory
+    IF default_outfit_id IS NOT NULL THEN
+        INSERT INTO public.user_mascot_inventory (user_id, outfit_id)
+        VALUES (NEW.id, default_outfit_id)
+        ON CONFLICT (user_id, outfit_id) DO NOTHING;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger firing on auth.users insertion (Supabase Auth)
+DO $$ BEGIN
+    DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+    CREATE TRIGGER on_auth_user_created
+        AFTER INSERT ON auth.users
+        FOR EACH ROW EXECUTE FUNCTION public.handle_new_google_user();
+EXCEPTION
+    WHEN undefined_table THEN null; -- If auth.users not present in standalone SQLite/local
+END $$;
+
+-- ==========================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ==========================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can read/update own profile" ON public.profiles 
-    FOR ALL USING (auth.uid() = id);
+
+-- 1. Users can manage their own profile
+CREATE POLICY "Users can update own profile" ON public.profiles 
+    FOR UPDATE USING (auth.uid() = id);
+
+-- 2. Real-Player Leaderboard: Authenticated users can view usernames, xp, league for rankings
+CREATE POLICY "Allow public read for global rankings" ON public.profiles 
+    FOR SELECT USING (true);
 
 ALTER TABLE public.user_mascot_inventory ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can access own inventory" ON public.user_mascot_inventory 

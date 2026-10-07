@@ -21,6 +21,7 @@ class Profile(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String(255), unique=True, nullable=False)
     username = Column(String(100), unique=True, nullable=False)
+    avatar_url = Column(String(500), nullable=True)
     active_track = Column(String(10), default="EEE")  # CSE, ECE, EEE
     xp = Column(Integer, default=0)
     spark_coins = Column(Integer, default=100)

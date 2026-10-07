@@ -5,6 +5,7 @@ import { FormattedMathText } from '../components/KaTeXRenderer';
 import { SocraticDrawer } from '../components/SocraticDrawer';
 import { CelebrationModal } from '../components/CelebrationModal';
 import { api } from '../api';
+import { soundManager } from '../utils/soundManager';
 import {
   ArrowLeft, CheckCircle2, AlertCircle, Sparkles, Zap, Terminal,
   Sliders, Play, RefreshCw, HelpCircle, Activity, ChevronRight
@@ -131,6 +132,8 @@ export const WorkbenchView: React.FC<WorkbenchViewProps> = ({
       onRefreshProfile();
 
       if (result.is_correct) {
+        soundManager.playLevelVictory();
+        soundManager.playCoinPickup();
         if (result.level_completed) {
           setCelebrationData({
             xp: result.xp_earned,
@@ -139,6 +142,7 @@ export const WorkbenchView: React.FC<WorkbenchViewProps> = ({
           setShowCelebration(true);
         }
       } else {
+        soundManager.playHeartLoss();
         // If wrong, offer Socratic tutor hint automatically
         setIsSocraticOpen(true);
       }

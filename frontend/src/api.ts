@@ -106,8 +106,18 @@ export const api = {
     return res.json();
   },
 
+  async syncGoogleUser(user: { id: string; email: string; username?: string; avatar_url?: string }): Promise<any> {
+    const res = await fetch(`${API_BASE}/auth/google-sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user),
+    });
+    if (!res.ok) throw new Error('Failed to sync Google user');
+    return res.json();
+  },
+
   async getLeagueStandings(tier: string = 'Bronze'): Promise<{ leaderboard: LeaderboardEntry[]; league_tier: string; countdown_days: number }> {
-    const res = await fetch(`${API_BASE}/leagues/standings?tier=${tier}`);
+    const res = await fetch(`${API_BASE}/analytics/league?tier=${tier}`);
     if (!res.ok) throw new Error('Failed to fetch standings');
     return res.json();
   },

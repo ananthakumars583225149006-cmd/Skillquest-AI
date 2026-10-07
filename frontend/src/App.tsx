@@ -7,15 +7,38 @@ import { WorkbenchView } from './views/WorkbenchView';
 import { WardrobeView } from './views/WardrobeView';
 import { LeaguesView } from './views/LeaguesView';
 import { api } from './api';
+import { supabase } from './utils/supabaseClient';
+import { soundManager } from './utils/soundManager';
 
 export const App: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activeView, setActiveView] = useState<'home' | 'learn' | 'wardrobe' | 'leagues' | 'workbench'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'learn' | 'wardrobe' | 'leagues' | 'workbench'>('learn');
   const [selectedTrack, setSelectedTrack] = useState<CourseTrack>('EEE');
   const [selectedLevelId, setSelectedLevelId] = useState<string>('eee-lvl-1');
 
   useEffect(() => {
     loadProfile();
+
+    // Listen to Supabase OAuth State Change
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        try {
+          await api.syncGoogleUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            username: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0],
+            avatar_url: session.user.user_metadata?.avatar_url,
+          });
+          await loadProfile();
+        } catch (err) {
+          console.warn('Google user sync error:', err);
+        }
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
 
   const loadProfile = async () => {
@@ -39,18 +62,20 @@ export const App: React.FC = () => {
   };
 
   const handleNavigateToMap = (track: CourseTrack) => {
+    soundManager.playVineSwing();
     handleTrackChange(track);
     setActiveView('learn');
   };
 
   const handleSelectLevel = (levelId: string) => {
+    soundManager.playVineSwing();
     setSelectedLevelId(levelId);
     setActiveView('workbench');
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFC] text-[#18181B] flex flex-col selection:bg-purple-100 selection:text-[#7C3AED]">
-      {/* Top Navigation Header */}
+    <div className="min-h-screen bg-[#064E3B] text-amber-50 flex flex-col selection:bg-amber-400 selection:text-amber-950 font-sans">
+      {/* Top Navigation Rustic Wooden Header */}
       {activeView !== 'workbench' && (
         <Header
           profile={profile}
@@ -66,7 +91,10 @@ export const App: React.FC = () => {
           <HomeView
             profile={profile}
             onNavigateToMap={handleNavigateToMap}
-            onNavigateToWardrobe={() => setActiveView('wardrobe')}
+            onNavigateToWardrobe={() => {
+              soundManager.playVineSwing();
+              setActiveView('wardrobe');
+            }}
           />
         )}
 
@@ -83,7 +111,10 @@ export const App: React.FC = () => {
           <WorkbenchView
             levelId={selectedLevelId}
             profile={profile}
-            onBack={() => setActiveView('learn')}
+            onBack={() => {
+              soundManager.playVineSwing();
+              setActiveView('learn');
+            }}
             onRefreshProfile={loadProfile}
           />
         )}

@@ -4,6 +4,7 @@ export interface UserProfile {
   id: string;
   email: string;
   username: string;
+  avatar_url?: string;
   active_track: CourseTrack;
   xp: number;
   spark_coins: number;
@@ -88,6 +89,7 @@ export interface MascotOutfitItem {
 export interface LeaderboardEntry {
   rank: number;
   username: string;
+  avatar_url?: string;
   weekly_xp: number;
   is_current_user: boolean;
   zone: 'promotion' | 'relegation' | 'safe';
